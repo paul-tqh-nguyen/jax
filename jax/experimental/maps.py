@@ -945,7 +945,7 @@ def _batch_trace_process_xmap(self, is_spmd, primitive, f: lu.WrappedFun, tracer
     dims_out = dims_out_thunk()
     return [batching.BatchTracer(self, v, d) for v, d in zip(vals_out, dims_out)]
 batching.BatchTrace.process_xmap = partialmethod(_batch_trace_process_xmap, False)  # type: ignore
-batching.SPMDBatchTrace.process_xmap = partialmethod(_batch_trace_process_xmap, True)  # type: ignore
+pxla.SPMDBatchTrace.process_xmap = partialmethod(_batch_trace_process_xmap, True)  # type: ignore
 
 
 def _xmap_initial_to_final_params(params):
