@@ -3114,6 +3114,7 @@ def _conv_general_dilated_translation_rule(
     # error bound (e.g. 1p-24 in case of float32) would be relative to the
     # maximum of real and imaginary parts of the result instead of being
     # satisfied by the real and imaginary parts independently of each other.
+    # This logic should be kept in sync with the one in jax2tf.
     if preferred_element_type is not None:
       # Convert complex dtype to types used for real and imaginary parts
       assert np.issubdtype(preferred_element_type, np.complexfloating)
@@ -3272,7 +3273,8 @@ conv_general_dilated_p = standard_primitive(
                                     expand_complex_convolutions=False))
 
 # TODO(b/161124619, b/161126248): XLA does not support complex convolution on
-# CPU or GPU; on these backends, lower complex convolutions away.
+# GPU, and on CPU it uses a slow loop-based implementation;
+# on these backends, lower complex convolutions away.
 xla.backend_specific_translations['cpu'][conv_general_dilated_p] = partial(
     _conv_general_dilated_translation_rule, expand_complex_convolutions=True)
 xla.backend_specific_translations['gpu'][conv_general_dilated_p] = partial(
