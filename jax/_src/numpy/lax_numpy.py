@@ -3847,6 +3847,37 @@ def diagflat(v, k=0):
   res = res.reshape(adj_length,adj_length)
   return res
 
+@_wraps(np.poly)
+def poly(seq_of_zeros):
+  seq_of_zeros = atleast_1d(seq_of_zeros)
+
+  # DWIM integer types to float64 as per https://github.com/numpy/numpy/issues/5096
+  dt = seq_of_zeros.dtype
+  seq_of_zeros = seq_of_zeros.astype(np.mintypecode(dt.char))
+
+  sh = seq_of_zeros.shape
+  if len(sh) == 2 and sh[0] == sh[1] != 0:
+    # import at runtime to avoid circular import
+    from . import linalg
+    seq_of_zeros = linalg.eigvals(seq_of_zeros)
+
+  if len(seq_of_zeros.shape) != 1:
+    raise ValueError("input must be 1d or non-empty square 2d array.")
+
+  if len(seq_of_zeros) == 0:
+    return 1.0
+  dt = seq_of_zeros.dtype
+  a = ones((1,), dtype=dt)
+  for k in range(len(seq_of_zeros)):
+    a = convolve(a, array([1, -seq_of_zeros[k]], dtype=dt), mode='full')
+
+  if issubclass(a.dtype.type, complexfloating):
+    roots = asarray(seq_of_zeros, complex)
+    roots_are_real = all(sort(roots) == sort(roots.conjugate()))
+    a = where(roots_are_real, a.real, a)
+  
+  return a
+
 
 @_wraps(np.polyval)
 def polyval(p, x):

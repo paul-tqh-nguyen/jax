@@ -1753,6 +1753,27 @@ class LaxBackedNumpyTests(jtu.JaxTestCase):
 
 
   @parameterized.named_parameters(jtu.cases_from_list(
+      {"testcase_name": "_shape={}_rank{}".format(
+        jtu.format_shape_dtype_string(a_shape, dtype), rank),
+       "dtype": dtype, "a_shape": a_shape, "rank": rank}
+      for rank in (1, 2)
+      for dtype in default_dtypes
+      for a_shape in one_dim_array_shapes))
+  def testPoly(self, a_shape, dtype, rank):
+    if np.mintypecode(dtype(0).dtype.char) == 'd' and not config.x64_enabled:
+      self.skipTest(f"Only run {dtype} testcase when float64 is enabled.")
+    elif dtype == np.float32 and not config.x64_enabled and rank == 2:
+      self.skipTest(f"Only run {dtype} testcase with rank 2 when "
+                    "float64 is enabled (due to the need for complex64).")
+    elif dtype == np.float16:
+      self.skipTest(f"{dtype} not supported in numpy.")
+    rng = jtu.rand_default(self.rng())
+    tol = jtu.tolerance(dtype, { np.float32: 1e-3, np.float64: 1e-6 })
+    args_maker = lambda: [rng(a_shape * rank, dtype)]
+    self._CheckAgainstNumpy(np.poly, jnp.poly, args_maker, check_dtypes=False, tol=tol)
+    self._CompileAndCheck(jnp.poly, args_maker, check_dtypes=True, rtol=tol, atol=tol)
+
+  @parameterized.named_parameters(jtu.cases_from_list(
       {"testcase_name": "a_shape={} , b_shape={}".format(
           jtu.format_shape_dtype_string(a_shape, dtype),
           jtu.format_shape_dtype_string(b_shape, dtype)),
